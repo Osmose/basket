@@ -504,20 +504,11 @@ def subscribe(request):
     data = request.POST.dict()
     newsletters = data.get('newsletters', None)
     if not newsletters:
-        # request.body causes tests to raise exceptions
-        # while request.read() works.
-        raw_request = request.read()
-        if 'newsletters=' in raw_request:
-            # malformed request from FxOS
-            # Can't use QueryDict since the string is not url-encoded.
-            # It will convert '+' to ' ' for example.
-            data = dict(pair.split('=') for pair in raw_request.split('&'))
-        else:
-            return HttpResponseJSON({
-                'status': 'error',
-                'desc': 'newsletters is missing',
-                'code': errors.BASKET_USAGE_ERROR,
-            }, 400)
+        return HttpResponseJSON({
+            'status': 'error',
+            'desc': 'newsletters is missing',
+            'code': errors.BASKET_USAGE_ERROR,
+        }, 400)
 
     optin = data.get('optin', 'N').upper() == 'Y'
     sync = data.get('sync', 'N').upper() == 'Y'

@@ -174,32 +174,6 @@ class GetBestLanguageTests(TestCase):
         self._test([], None)
 
 
-@patch('news.views.validate_email', none_mock)
-@patch('news.views.update_user_task')
-class FxOSMalformedPOSTTest(TestCase):
-    """Bug 962225"""
-
-    def setUp(self):
-        self.rf = RequestFactory()
-
-    def test_deals_with_broken_post_data(self, update_user_mock):
-        """Should be able to parse data from the raw request body.
-
-        FxOS sends POST requests with the wrong mime-type, so request.POST is never
-        filled out. We should parse the raw request body to get the data until this
-        is fixed in FxOS in bug 949170.
-        """
-        req = self.rf.generic('POST', '/news/subscribe/',
-                              data='email=dude+abides@example.com&newsletters=firefox-os',
-                              content_type='text/plain; charset=UTF-8')
-        self.assertFalse(bool(req.POST))
-        views.subscribe(req)
-        update_user_mock.assert_called_with(req, views.SUBSCRIBE, data={
-            'email': 'dude+abides@example.com',
-            'newsletters': 'firefox-os',
-        }, optin=False, sync=False)
-
-
 class SubscribeEmailValidationTest(TestCase):
     email = 'dude@example.com'
     data = {
