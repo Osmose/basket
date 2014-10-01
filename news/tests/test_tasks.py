@@ -1,11 +1,20 @@
+from urllib2 import URLError
+
 from django.test import TestCase
 
 import celery
 from mock import Mock, patch
 
 from news.models import FailedTask, Subscriber
-from news.tasks import (RECOVERY_MESSAGE_ID, mogrify_message_id,
-    send_recovery_message_task, SUBSCRIBE, update_phonebook, update_user)
+from news.tasks import (
+    et_task,
+    mogrify_message_id,
+    RECOVERY_MESSAGE_ID,
+    send_recovery_message_task,
+    SUBSCRIBE,
+    update_phonebook,
+    update_user,
+)
 
 
 class FailedTaskTest(TestCase):
@@ -144,3 +153,22 @@ class UpdateUserTests(TestCase):
 
         update_user({}, 'a@example.com', None, SUBSCRIBE, True)
         self.get_user_data.assert_called_with(token='mytoken')
+
+
+class ETTaskTests(TestCase):
+    def test_retry_increase(self):
+        """
+        The delay for retrying a task should increase geometrically by a
+        power of 2. I really hope I said that correctly.
+        """
+        error = URLError(reason=Exception('foo bar!'))
+
+        @et_task
+        def myfunc():
+            raise error
+
+        myfunc.request.retries = 4
+        myfunc.retry = Mock()
+        myfunc()
+
+        myfunc.retry.assert_called_with(exc=error, countdown=16 * 60)
